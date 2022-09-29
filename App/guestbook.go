@@ -9,11 +9,13 @@ import (
 	"os"
 )
 
+// Guestbook - структура, используемая при отображении view.html.
 type Guestbook struct {
 	SignatureCount int
 	Signatures     []string
 }
 
+// check вызывает log.Fatal для любых ошибок, отличных от nil.
 func check(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -28,17 +30,21 @@ func main() {
 	log.Fatal(err)
 }
 
+// createHandler получает запрос POST с добавляемой записью
+// и присоединяет ее к файлу signatures.
 func createHandler(writer http.ResponseWriter, request *http.Request) {
 	signature := request.FormValue("signature")
-	options := os.O_WRONLY | os.O_APPEND | os.O_CREATE
+	options := os.O_WRONLY | os.O_APPEND | os.O_CREATE // File opening options
 	file, err := os.OpenFile("signatures.txt", options, os.FileMode(0600))
 	check(err)
 	_, err = fmt.Fprintln(file, signature)
 	check(err)
 	err = file.Close()
 	check(err)
+	http.Redirect(writer, request, "/guestbook", http.StatusFound)
 }
 
+// newHandler отображает форму для ввода записи.
 func newHandler(writer http.ResponseWriter, request *http.Request) {
 	html, err := template.ParseFiles("new.html")
 	check(err)
@@ -46,6 +52,8 @@ func newHandler(writer http.ResponseWriter, request *http.Request) {
 	check(err)
 }
 
+// viewHandler читает записи гостевой книги и выводит их
+// вместе со счетчиком записей.
 func viewHandler(writer http.ResponseWriter, request *http.Request) {
 	signatures := getStrings("signatures.txt")
 	html, err := template.ParseFiles("view.html")
@@ -58,6 +66,8 @@ func viewHandler(writer http.ResponseWriter, request *http.Request) {
 	check(err)
 }
 
+// getStrings возвращает сегмент строк, прочитанный из fileName,
+// по одной строке на каждую строку файла.
 func getStrings(fileName string) []string {
 	var lines []string
 	file, err := os.Open(fileName)
